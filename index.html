@@ -124,6 +124,67 @@
     body { background: white; color: black; }
     .card, .gradient-bg, section { background: white !important; color: black !important; border-color: #ccc !important; }
   }
+
+  /* ====== MOBILE RESPONSIVE OVERRIDES ====== */
+  /* Horizontal-scroll wrappers for things that can't shrink (block diagrams, pipelines, tables) */
+  .h-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .h-scroll::-webkit-scrollbar { height: 6px; }
+  .h-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+  /* Mobile menu */
+  #mobileMenu { display: none; }
+  #mobileMenu.open { display: flex; }
+
+  @media (max-width: 768px) {
+    /* Tighter section padding */
+    section { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important; padding-bottom: 2rem !important; }
+    header .max-w-7xl { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+
+    /* Hero typography */
+    h1 { font-size: 2.25rem !important; line-height: 1.15 !important; }
+    h1 span.text-3xl, h1 span.md\:text-4xl { font-size: 1.1rem !important; }
+    h1 .text-slate-200 { font-size: 1.5rem !important; }
+
+    /* Section h3 */
+    section h3 { font-size: 1.5rem !important; line-height: 1.2 !important; }
+
+    /* Cards trim padding */
+    .card { padding: 1rem !important; border-radius: 12px; }
+    .card.p-8, .card.p-6, .card.p-5, .card.p-4 { padding: 1rem !important; }
+
+    /* Block diagram blocks shrink */
+    .blk { padding: 8px 10px; font-size: 11px; min-width: 0; }
+    .arrow { font-size: 16px; }
+
+    /* Pipeline (algorithms section) → horizontal scroll */
+    .pipeline-row { flex-wrap: nowrap !important; min-width: max-content; }
+
+    /* Hide floating falcon; already lg:block but force just in case */
+    .float { display: none !important; }
+
+    /* Chart canvas containers shorter on mobile */
+    .h-80 { height: 16rem !important; }
+    .h-72 { height: 14rem !important; }
+    .h-48 { height: 10rem !important; }
+
+    /* Results table → scroll horizontally */
+    #resTbl, #resTbl + thead, table { font-size: 11px; }
+
+    /* Hero stats: 2 cols already, but tighten numbers */
+    .text-3xl { font-size: 1.5rem !important; }
+    .text-5xl { font-size: 2rem !important; }
+    .text-7xl { font-size: 2.5rem !important; }
+
+    /* Live Lab control / chart stacking already handled by lg:grid-cols-3 */
+    /* Sticky nav slimmer */
+    nav .max-w-7xl { padding: 0.5rem 1rem !important; }
+  }
+
+  @media (max-width: 480px) {
+    .blk { padding: 6px 8px; font-size: 10px; }
+    .chip { font-size: 10px; padding: 2px 6px; }
+    h1 { font-size: 1.85rem !important; }
+  }
 </style>
 </head>
 <body class="gradient-bg text-slate-100 min-h-screen">
@@ -147,6 +208,20 @@
       <a href="#results"   class="text-slate-300 hover:text-teal-300">Results</a>
       <button onclick="window.print()" class="bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold px-3 py-1.5 rounded text-xs">Print / PDF</button>
     </div>
+    <!-- Hamburger (mobile) -->
+    <button onclick="document.getElementById('mobileMenu').classList.toggle('open')" class="md:hidden text-slate-200 p-2" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+  <!-- Mobile menu panel -->
+  <div id="mobileMenu" class="md:hidden flex-col bg-slate-950/95 border-t border-slate-800 px-6 py-3 gap-1 text-sm">
+    <a href="#problem"    onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">01 · Problem</a>
+    <a href="#diagrams"   onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">02 · Architecture</a>
+    <a href="#algorithms" onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">03 · Algorithms</a>
+    <a href="#sandbox"    onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">04 · Live Lab</a>
+    <a href="#results"    onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">05 · Results</a>
+    <a href="#race"       onclick="document.getElementById('mobileMenu').classList.remove('open')" class="py-2 text-slate-300 border-b border-slate-800">06 · Race</a>
+    <button onclick="window.print()" class="mt-2 bg-teal-500 text-slate-900 font-bold py-2 rounded text-xs">Print / PDF</button>
   </div>
 </nav>
 
@@ -296,8 +371,8 @@
   </div>
 
   <!-- Traditional diagram -->
-  <div id="dia-trad" class="card p-8 mt-4">
-    <div class="grid grid-cols-7 gap-3 items-center">
+  <div id="dia-trad" class="card p-8 mt-4 h-scroll">
+    <div class="grid grid-cols-7 gap-3 items-center" style="min-width:560px;">
       <div class="blk blk-pv col-span-1" title="3 PV modules with bypass diodes">PV Array<br/><span class="text-xs font-normal opacity-70">3 series modules</span></div>
       <div class="arrow">→</div>
       <div class="blk blk-conv col-span-1" title="Boost converter">DC-DC<br/>Boost</div>
@@ -334,8 +409,8 @@
   </div>
 
   <!-- AH-FOA diagram -->
-  <div id="dia-ah" class="card p-8 mt-4 hidden glow-teal">
-    <div class="grid grid-cols-9 gap-3 items-center">
+  <div id="dia-ah" class="card p-8 mt-4 hidden glow-teal h-scroll">
+    <div class="grid grid-cols-9 gap-3 items-center" style="min-width:720px;">
       <div class="blk blk-pv col-span-2" title="3 PV modules + bypass diodes (Alshareef SDM)">
         PV Array<br/><span class="text-xs font-normal opacity-70">SDM · 3× bypass diodes</span>
       </div>
@@ -422,7 +497,8 @@
   <!-- AH-FOA pipeline visualization -->
   <div class="card p-6 mt-6">
     <h4 class="font-semibold">How AH-FOA thinks (per duty-cycle decision)</h4>
-    <div class="mt-4 flex flex-wrap items-center gap-2 mono text-xs">
+    <p class="text-[11px] text-slate-500 mt-1 md:hidden">↔ Scroll horizontally to view</p>
+    <div class="mt-4 h-scroll"><div class="pipeline-row flex flex-wrap items-center gap-2 mono text-xs">
       <span class="px-3 py-2 rounded bg-amber-500/10 border border-amber-500/40 text-amber-200">measure V·I</span>
       <span class="text-teal-400">→</span>
       <span class="px-3 py-2 rounded bg-violet-500/10 border border-violet-500/40 text-violet-200">|ΔP|/P &gt; 10% ?</span>
@@ -436,7 +512,7 @@
       <span class="px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/40 text-emerald-200">std(X) &lt; ε ?</span>
       <span class="text-teal-400">→ yes →</span>
       <span class="px-3 py-2 rounded bg-teal-500/10 border border-teal-500/40 text-teal-200">P&amp;O fine-tune (ΔD=1e-3)</span>
-    </div>
+    </div></div>
   </div>
 </section>
 
@@ -497,8 +573,9 @@
     AH-FOA wins or matches the best baseline in every PSC condition while halving variance.
   </p>
 
-  <div class="card p-4 mt-6 overflow-x-auto">
-    <table class="w-full text-sm">
+  <div class="card p-4 mt-6 h-scroll">
+    <p class="text-[11px] text-slate-500 mb-2 md:hidden">↔ Scroll horizontally to view</p>
+    <table class="w-full text-sm" style="min-width:600px;">
       <thead class="text-xs uppercase text-slate-400 border-b border-slate-700">
         <tr>
           <th class="text-left py-2 px-3">Case</th>
