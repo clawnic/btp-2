@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B.Tech Project: Advanced MPPT Algorithms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Slate Neutrals with Teal and Indigo Accents for a professional, academic, and engineering aesthetic. -->
+    
+    <!-- Application Structure Plan: 
+    The SPA is structured as a Project Planning Dashboard tailored to the student's B.Tech agenda. 
+    1. Context & Problem: Explains Partial Shading and Hotspots using interactive text and an illustrative P-V curve chart.
+    2. Algorithm Analysis: Uses interactive charts to compare P&O, PSO, and the proposed FOA, synthesizing data from the uploaded reports.
+    3. Project Architecture (MATLAB/Python): An interactive tabbed interface detailing the exact development components requested by the user.
+    4. AI Co-Pilot Prompt: A dedicated section providing the tailored Claude 4.7 Opus prompt with a click-to-copy feature for immediate use.
+    This structure guides the user linearly from research understanding to actionable project execution. 
+    -->
+
+    <!-- Visualization & Content Choices: 
+    - P-V Curve Chart (Chart.js): Goal: Inform on PSC effects. Shows multiple local peaks vs global peak. Justification: Visualizing the core problem of partial shading.
+    - Radar/Bar Charts (Chart.js): Goal: Compare algorithm performance (Efficiency, Speed, Oscillation). Justification: Clearly shows FOA's superiority over P&O and standard PSO.
+    - Interactive Tabs (Vanilla JS + HTML/CSS): Goal: Organize MATLAB vs Python development tasks. Justification: Keeps the UI clean while providing deep technical details.
+    - Confirming: NO SVG graphics used. NO Mermaid JS used. All visuals are HTML/CSS or HTML5 Canvas via Chart.js.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Dedicated Chart Container Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .chart-container-large {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 450px;
+        }
+        
+        .tab-active { border-bottom: 2px solid #0d9488; color: #0d9488; font-weight: 600; }
+        .tab-inactive { color: #64748b; border-bottom: 2px solid transparent; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-teal-200 selection:text-teal-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="text-teal-600 text-2xl font-bold">⚡ MPPT.sys</div>
+                    <span class="text-sm text-slate-500 hidden md:block">| B.Tech Project Research Dashboard</span>
+                </div>
+                <div class="flex items-center space-x-6 text-sm font-medium">
+                    <a href="#research" class="text-slate-600 hover:text-teal-600 transition">Research Analysis</a>
+                    <a href="#architecture" class="text-slate-600 hover:text-teal-600 transition">Project Architecture</a>
+                    <a href="#ai-prompt" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition shadow-sm">Get AI Prompt</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header class="bg-slate-900 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400">
+                Intelligent MPPT for Photovoltaic Systems
+            </h1>
+            <p class="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto font-light">
+                Utilizing Falcon Optimization Algorithm (FOA) to mitigate Partial Shading Conditions (PSC) and localized heating in PV Arrays.
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
+
+        <!-- SECTION 1: Research & Problem Statement -->
+        <section id="research" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900">The Problem: Partial Shading & Hotspots</h2>
+                <p class="text-slate-600 mt-2 max-w-2xl mx-auto">Understanding why conventional algorithms fail under environmental stress, leading to significant power loss and hardware degradation.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span>🌤️</span> Partial Shading Condition (PSC)
+                    </h3>
+                    <p class="text-slate-600 mb-4 leading-relaxed">
+                        When a PV array is partially shaded (by clouds, trees, buildings), the P-V characteristic curve develops <strong>multiple local maxima (peaks)</strong>. Conventional algorithms like Perturb & Observe (P&O) trap at the first peak they encounter (LMPP), failing to reach the Global Maximum Power Point (GMPP).
+                    </p>
+                    <h3 class="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
+                        <span>🔥</span> Localized Heating (Dead Cells)
+                    </h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        Shaded or dead cells act as a load rather than a generator. They dissipate power generated by active cells as heat, causing "hotspots" that permanently damage the panel. Efficient global tracking and bypass diode architectures are crucial.
+                    </p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider text-center mb-4">P-V Curve Characteristics</h4>
+                    <div class="chart-container">
+                        <canvas id="pvCurveChart"></canvas>
+                    </div>
+                    <p class="text-xs text-center text-slate-500 mt-4">Simulation of P-V curve under normal vs. partial shading conditions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Algorithm Performance Analysis -->
+        <section>
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900">Performance Analysis of MPPT Algorithms</h2>
+                <p class="text-slate-600 mt-2 max-w-2xl mx-auto">Comparative analysis synthesized from literature: Conventional (P&O) vs Metaheuristic (PSO) vs The Proposed Solution (FOA).</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                <!-- Stat Cards -->
+                <div class="bg-white p-6 rounded-xl border-l-4 border-slate-400 shadow-sm hover:shadow-md transition">
+                    <h3 class="text-lg font-bold text-slate-800">P&O (Conventional)</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                        <li><strong>Efficiency:</strong> ~85-90% under PSC</li>
+                        <li><strong>Speed:</strong> Moderate</li>
+                        <li><strong>Drawback:</strong> Fails GMPP tracking, high oscillations.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl border-l-4 border-blue-400 shadow-sm hover:shadow-md transition">
+                    <h3 class="text-lg font-bold text-slate-800">PSO (Swarm-based)</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                        <li><strong>Efficiency:</strong> ~98% under PSC</li>
+                        <li><strong>Speed:</strong> Slow convergence</li>
+                        <li><strong>Drawback:</strong> Random initialization causes unpredictable settling times.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl border-l-4 border-teal-500 shadow-sm hover:shadow-md transition transform scale-105 ring-1 ring-teal-500">
+                    <h3 class="text-lg font-bold text-teal-700">FOA (Falcon-based) 🏆</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                        <li><strong>Efficiency:</strong> 99.8% under PSC</li>
+                        <li><strong>Speed:</strong> Extremely Fast (< 0.2s)</li>
+                        <li><strong>Benefit:</strong> Zero steady-state oscillation, avoids hot-spots effectively.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                 <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider text-center mb-6">Algorithm Comparative Metrics</h4>
+                <div class="chart-container-large">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Project Architecture (MATLAB & Python) -->
+        <section id="architecture" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900">B.Tech Project Implementation Plan</h2>
+                <p class="text-slate-600 mt-2 max-w-2xl mx-auto">Dedicated breakdown of project components across MATLAB (Simulation & Control) and Python (Algorithm Modeling & Data Analysis).</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="flex border-b border-slate-200">
+                    <button onclick="switchTab('matlab')" id="tab-matlab" class="w-1/2 py-4 text-center font-medium tab-active transition">
+                        🧮 MATLAB & Simulink Components
+                    </button>
+                    <button onclick="switchTab('python')" id="tab-python" class="w-1/2 py-4 text-center font-medium tab-inactive transition bg-slate-50 hover:bg-slate-100">
+                        🐍 Python Components
+                    </button>
+                </div>
+                
+                <div class="p-8">
+                    <!-- MATLAB Content -->
+                    <div id="content-matlab" class="block space-y-6 animate-fade-in">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2">1. PV Array Modeling</h4>
+                                <p class="text-sm text-blue-800">Build a mathematical model of PV panels using standard equations. Configure bypass diodes to simulate Partial Shading and observe localized heating scenarios (I-V, P-V curves).</p>
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2">2. Power Electronics Interfacing</h4>
+                                <p class="text-sm text-blue-800">Design a DC-DC Boost Converter in Simulink. Calculate inductor and capacitor values to match the impedance of the PV array to the load.</p>
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2">3. MPPT Controller Integration</h4>
+                                <p class="text-sm text-blue-800">Implement the standard P&O algorithm via MATLAB Function block for baseline testing. Later, integrate the FOA algorithm (written in MATLAB script) to control the PWM duty cycle.</p>
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                                <h4 class="font-bold text-blue-900 mb-2">4. Shading Scenario Generator</h4>
+                                <p class="text-sm text-blue-800">Create a subsystem that dynamically changes irradiance levels (e.g., 1000, 700, 300 W/m²) across different series-connected modules over time to test algorithmic robustness.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Python Content -->
+                    <div id="content-python" class="hidden space-y-6 animate-fade-in">
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-100">
+                                <h4 class="font-bold text-yellow-900 mb-2">1. Algorithmic Prototyping (FOA)</h4>
+                                <p class="text-sm text-yellow-800">Write the core Falcon Optimization Algorithm in Python (NumPy/SciPy) as a standalone script to optimize a mathematical function mimicking the multi-peak P-V curve before moving it to MATLAB.</p>
+                            </div>
+                            <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-100">
+                                <h4 class="font-bold text-yellow-900 mb-2">2. Data Analysis & Visualization</h4>
+                                <p class="text-sm text-yellow-800">Export MATLAB simulation results (Voltage, Power, Duty Cycle over time) to CSV. Use Pandas and Matplotlib/Seaborn to create publication-quality graphs for your project thesis.</p>
+                            </div>
+                            <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-100">
+                                <h4 class="font-bold text-yellow-900 mb-2">3. Hotspot Predictive Modeling</h4>
+                                <p class="text-sm text-yellow-800">Optional: Use Scikit-learn to train a simple ML model (Random Forest) that takes voltage and current variations as input to predict the onset of a dead-cell/hotspot scenario.</p>
+                            </div>
+                            <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-100">
+                                <h4 class="font-bold text-yellow-900 mb-2">4. Hardware-In-Loop (HIL) Comm</h4>
+                                <p class="text-sm text-yellow-800">If utilizing hardware (like Arduino/Raspberry Pi for real panel testing), use Python `pyserial` to gather live sensor data and execute the FOA MPPT logic in real-time.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: AI Prompt Generator -->
+        <section id="ai-prompt" class="bg-slate-900 rounded-2xl p-8 shadow-xl border border-slate-700 scroll-mt-20">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Claude Opus 4.7 Project Prompt</h2>
+                    <p class="text-slate-400 text-sm">Copy this optimized prompt and paste it into Claude to kickstart your development.</p>
+                </div>
+                <button onclick="copyPrompt()" id="copyBtn" class="mt-4 md:mt-0 flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold py-2 px-4 rounded transition">
+                    <span id="copyIcon">📋</span> <span id="copyText">Copy Prompt</span>
+                </button>
+            </div>
+            
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-600 relative">
+                <pre class="text-slate-300 text-sm font-mono whitespace-pre-wrap overflow-x-auto leading-relaxed" id="promptText">
+Act as an expert Electrical Engineer and Lead Developer for a B.Tech academic project. My project is titled "Performance Analysis and Improvement of MPPT Algorithms under Partial Shading Conditions (PSC) focusing on the Falcon Optimization Algorithm (FOA)". 
+
+Here is my project agenda:
+1. Conduct a performance analysis of conventional MPPT (P&O) vs Metaheuristic algorithms (PSO) vs FOA.
+2. Address challenges like Partial Shading and localized heating (hotspots) caused by dead cells.
+3. My development stack is entirely focused on MATLAB (Simulink) and Python.
+
+Please provide a structured, step-by-step technical guide addressing the following:
+
+**Phase 1: MATLAB/Simulink Setup**
+- Step-by-step instructions on how to model a 3-module PV array in Simulink subjected to different irradiances (e.g., 1000, 700, 300 W/m²) to simulate PSC.
+- The exact parameters and block diagrams needed to design a DC-DC Boost Converter suitable for MPPT testing.
+
+**Phase 2: Algorithm Implementation**
+- Provide the basic MATLAB logic/code structure to implement the Falcon Optimization Algorithm (FOA) for MPPT control (controlling the duty cycle).
+- Explain how FOA theoretically avoids the localized heating issue by quickly jumping out of Local Maximum Power Points (LMPP) compared to P&O.
+
+**Phase 3: Python Integration**
+- Provide a Python (Pandas/Matplotlib) script template to ingest `.csv` data exported from MATLAB (Time, Voltage, Power, Duty Cycle) to generate comparative graphs for my final thesis report.
+- Suggest a conceptual approach in Python for monitoring array data to detect early signs of hot spots/dead cells.
+
+Please ensure the code and Simulink instructions are suitable for a final-year B.Tech level.
+</pre>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-20 py-8 text-center text-sm text-slate-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>Designed for B.Tech Project Research & Execution Synthesis.</p>
+        </div>
+    </footer>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // 1. Tab Switching Logic for Architecture Section
+        function switchTab(tabId) {
+            // Get elements
+            const tabMatlab = document.getElementById('tab-matlab');
+            const tabPython = document.getElementById('tab-python');
+            const contentMatlab = document.getElementById('content-matlab');
+            const contentPython = document.getElementById('content-python');
+
+            if (tabId === 'matlab') {
+                tabMatlab.className = 'w-1/2 py-4 text-center font-medium tab-active transition bg-white';
+                tabPython.className = 'w-1/2 py-4 text-center font-medium tab-inactive transition bg-slate-50 hover:bg-slate-100';
+                contentMatlab.classList.remove('hidden');
+                contentPython.classList.add('hidden');
+            } else {
+                tabPython.className = 'w-1/2 py-4 text-center font-medium tab-active transition bg-white';
+                tabMatlab.className = 'w-1/2 py-4 text-center font-medium tab-inactive transition bg-slate-50 hover:bg-slate-100';
+                contentPython.classList.remove('hidden');
+                contentMatlab.classList.add('hidden');
+            }
+        }
+
+        // 2. Copy Prompt Function
+        function copyPrompt() {
+            const promptText = document.getElementById('promptText').innerText;
+            navigator.clipboard.writeText(promptText).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                const copyText = document.getElementById('copyText');
+                const copyIcon = document.getElementById('copyIcon');
+                
+                // Visual feedback
+                copyBtn.classList.remove('bg-teal-500', 'text-slate-900');
+                copyBtn.classList.add('bg-green-600', 'text-white');
+                copyText.innerText = 'Copied!';
+                copyIcon.innerText = '✅';
+
+                setTimeout(() => {
+                    copyBtn.classList.remove('bg-green-600', 'text-white');
+                    copyBtn.classList.add('bg-teal-500', 'text-slate-900');
+                    copyText.innerText = 'Copy Prompt';
+                    copyIcon.innerText = '📋';
+                }, 2000);
+            }).catch(err => {
+                // Fallback for iframe restrictions if navigator.clipboard fails
+                const textArea = document.createElement("textarea");
+                textArea.value = promptText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert("Prompt copied to clipboard!");
+                } catch (ex) {
+                    alert("Failed to copy. Please manually select and copy the text.");
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // 3. Chart.js Implementations
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // --- P-V Curve Chart ---
+            const ctxPV = document.getElementById('pvCurveChart').getContext('2d');
+            
+            // Simulated P-V curve data
+            const voltage = Array.from({length: 50}, (_, i) => i); // 0 to 49 Volts
+            
+            // Normal Curve (Uniform Irradiance) - Single Peak
+            const powerNormal = voltage.map(v => {
+                if(v < 40) return 4 * v; // Current source region
+                if(v >= 40 && v <= 45) return 160 - ((v-40)*32); // Knee region
+                return 0; // Voltage source region
+            });
+
+            // Partial Shading Curve - Multiple Peaks
+            const powerPSC = voltage.map(v => {
+                if(v < 15) return 3 * v; 
+                if(v >= 15 && v < 20) return 45 - ((v-15)*4); 
+                if(v >= 20 && v < 35) return 25 + (2 * (v-20)); // Peak 2 (GMPP)
+                if(v >= 35 && v < 40) return 55 - ((v-35)*8);
+                if(v >= 40 && v < 45) return 15 + (v-40); // Peak 3
+                return 0;
+            });
+
+            new Chart(ctxPV, {
+                type: 'line',
+                data: {
+                    labels: voltage,
+                    datasets: [
+                        {
+                            label: 'Uniform Irradiance (Normal)',
+                            data: powerNormal,
+                            borderColor: '#94a3b8',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Partial Shading (Multiple Peaks)',
+                            data: powerPSC,
+                            borderColor: '#0d9488',
+                            backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' W';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Voltage (V)' } },
+                        y: { title: { display: true, text: 'Power (W)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // --- Algorithm Comparison Bar Chart ---
+            const ctxComp = document.getElementById('comparisonChart').getContext('2d');
+            
+            new Chart(ctxComp, {
+                type: 'bar',
+                data: {
+                    labels: ['Tracking Efficiency (%)', 'Convergence Speed (Score 1-10)', 'Steady-State Stability (Score 1-10)'],
+                    datasets: [
+                        {
+                            label: 'P&O',
+                            data: [85, 6, 4],
+                            backgroundColor: '#94a3b8'
+                        },
+                        {
+                            label: 'PSO',
+                            data: [98, 4, 8],
+                            backgroundColor: '#60a5fa'
+                        },
+                        {
+                            label: 'FOA (Proposed)',
+                            data: [99.8, 9, 9.5],
+                            backgroundColor: '#0d9488'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y;
+                                        if(context.dataIndex === 0) label += '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
