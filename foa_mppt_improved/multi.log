@@ -1,0 +1,32 @@
+﻿
+=== Case1_Uniform: Case 1 - Uniform 1000 W/m^2 ===
+  P&O       eta= 99.99+/-0.00%   E= 85.17+/-0.00%   ripple=  0.07+/-0.00W
+  PSO       eta= 99.77+/-0.18%   E= 94.43+/-2.71%   ripple=  0.07+/-0.15W
+  FOA       eta= 99.81+/-0.15%   E= 94.59+/-3.00%   ripple=  0.84+/-1.37W
+  AH-FOA    eta= 99.98+/-0.08%   E= 96.07+/-1.73%   ripple=  0.01+/-0.00W
+
+=== Case2_Light: Case 2 - Light PSC ===
+  P&O       eta= 74.40+/-0.00%   E= 67.86+/-0.00%   ripple=  2.69+/-0.00W
+  PSO       eta= 92.76+/-10.78%   E= 82.73+/-10.00%   ripple=  6.62+/-9.93W
+  FOA       eta= 87.44+/-16.04%   E= 80.42+/-9.17%   ripple= 10.69+/-14.01W
+  AH-FOA    eta= 98.14+/-6.86%   E= 87.11+/-5.28%   ripple=  1.13+/-4.92W
+
+=== Case3_Heavy: Case 3 - Heavy PSC ===
+  P&O       eta= 74.28+/-0.00%   E= 65.59+/-0.00%   ripple=  2.66+/-0.00W
+  PSO       eta= 89.95+/-13.35%   E= 80.80+/-8.63%   ripple= 10.55+/-14.27W
+  FOA       eta= 83.36+/-17.57%   E= 75.18+/-11.71%   ripple= 17.13+/-17.57W
+  AH-FOA    eta= 91.13+/-13.58%   E= 79.98+/-10.34%   ripple= 11.27+/-16.61W
+
+=== Case4_Severe: Case 4 - Severe PSC ===
+  P&O       eta= 74.21+/-0.00%   E= 64.31+/-0.00%   ripple=  2.66+/-0.00W
+  PSO       eta= 74.42+/-15.66%   E= 67.94+/-9.98%   ripple= 31.73+/-16.58W
+  FOA       eta= 69.67+/-14.06%   E= 65.34+/-9.67%   ripple= 38.76+/-14.34W
+  AH-FOA    eta= 93.29+/-11.48%   E= 75.86+/-7.71%   ripple=  7.84+/-15.46W
+
+=== Case5_Dynamic: Case 5 - Dynamic step changes ===
+  P&O       eta= 99.99+/-0.00%   E= 87.72+/-0.00%   ripple=  0.04+/-0.00W
+  PSO       eta= 99.86+/-0.29%   E= 89.53+/-4.28%   ripple=  0.03+/-0.06W
+  FOA       eta= 98.78+/-3.38%   E= 88.92+/-1.88%   ripple=  3.47+/-9.51W
+  AH-FOA    eta= 95.73+/-3.45%   E= 88.50+/-2.15%   ripple= 22.91+/-19.45W
+
+Saved C:\Users\DSharma26\.local\share\graphite\btp\foa_mppt_improved\results\summary_multiseed.csv and summary_multiseed.png

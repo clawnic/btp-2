@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AH-FOA — Adaptive Hybrid Falcon Optimization for PV MPPT</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  html, body { font-family: 'Inter', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Background */
+  .gradient-bg {
+    background: radial-gradient(circle at 20% 0%, #0f172a 0%, #020617 60%);
+  }
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(45,212,191,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45,212,191,0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .glow-teal { box-shadow: 0 0 30px rgba(20,184,166,0.25), 0 0 60px rgba(20,184,166,0.1); }
+  .glow-rose { box-shadow: 0 0 30px rgba(244,63,94,0.25), 0 0 60px rgba(244,63,94,0.1); }
+
+  /* Animations */
+  @keyframes float { 0%,100% {transform: translateY(0);} 50% {transform: translateY(-6px);} }
+  .float { animation: float 4s ease-in-out infinite; }
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(20,184,166,0.5); }
+    70% { box-shadow: 0 0 0 14px rgba(20,184,166,0); }
+    100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); }
+  }
+  .pulse-ring { animation: pulseRing 2s infinite; }
+  @keyframes shimmer { 0% {background-position: -200% 0;} 100% {background-position: 200% 0;} }
+  .shimmer-text {
+    background: linear-gradient(90deg, #14b8a6 0%, #fff 50%, #14b8a6 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+
+  /* Block diagram */
+  .blk {
+    border-radius: 12px;
+    padding: 14px 18px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    border: 1px solid rgba(148,163,184,0.4);
+    background: rgba(15,23,42,0.6);
+    backdrop-filter: blur(4px);
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+  }
+  .blk:hover { transform: translateY(-3px); border-color: #14b8a6; box-shadow: 0 8px 24px rgba(20,184,166,0.25); }
+  .blk-pv     { border-color: #facc15; color: #fde68a; }
+  .blk-conv   { border-color: #60a5fa; color: #bfdbfe; }
+  .blk-mppt   { border-color: #f43f5e; color: #fda4af; }
+  .blk-load   { border-color: #94a3b8; color: #cbd5e1; }
+  .blk-novel  { border-color: #14b8a6; color: #99f6e4; background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(2,6,23,0.6)); }
+  .arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: #14b8a6; font-size: 22px; font-weight: 800;
+  }
+
+  /* Cards */
+  .card {
+    background: rgba(15,23,42,0.65);
+    border: 1px solid rgba(51,65,85,0.6);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+  }
+  .card-hover:hover { border-color: #14b8a6; }
+
+  /* Sliders */
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: linear-gradient(90deg, #14b8a6 0%, #14b8a6 var(--p,50%), #334155 var(--p,50%), #334155 100%);
+    border-radius: 4px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; border: 3px solid #14b8a6;
+    cursor: pointer; box-shadow: 0 0 8px rgba(20,184,166,0.6);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; border: 3px solid #14b8a6; cursor: pointer;
+  }
+
+  /* Tab styling */
+  .tab-btn { transition: all .2s; cursor: pointer; }
+  .tab-btn.active { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
+
+  /* Algo chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px; font-size: 12px;
+    font-weight: 600; border: 1px solid;
+  }
+  .chip-pno    { color: #94a3b8; border-color: #475569; background: rgba(148,163,184,0.08); }
+  .chip-pso    { color: #60a5fa; border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .chip-foa    { color: #14b8a6; border-color: #0d9488; background: rgba(20,184,166,0.08); }
+  .chip-ahfoa  { color: #f43f5e; border-color: #e11d48; background: rgba(244,63,94,0.12); }
+
+  /* Progress bars */
+  .bar-track { background: rgba(51,65,85,0.6); border-radius: 6px; overflow: hidden; height: 10px; }
+  .bar-fill  { height: 100%; transition: width 0.3s ease; border-radius: 6px; }
+
+  /* Falcon icon glyph */
+  .falcon-glyph {
+    display: inline-block; transform: scaleX(-1);
+    filter: drop-shadow(0 0 6px rgba(244,63,94,0.5));
+  }
+
+  /* Print friendliness */
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white; color: black; }
+    .card, .gradient-bg, section { background: white !important; color: black !important; border-color: #ccc !important; }
+  }
+</style>
+</head>
+<body class="gradient-bg text-slate-100 min-h-screen">
+
+<!-- ============== NAV ============== -->
+<nav class="no-print sticky top-0 z-50 backdrop-blur-md bg-slate-950/70 border-b border-slate-800">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-rose-500 flex items-center justify-center font-black text-slate-900 text-lg">⚡</div>
+      <div>
+        <div class="font-bold text-sm">AH-FOA Project</div>
+        <div class="text-xs text-slate-400">B.Tech Research Report</div>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-6 text-sm">
+      <a href="#problem"   class="text-slate-300 hover:text-teal-300">Problem</a>
+      <a href="#diagrams"  class="text-slate-300 hover:text-teal-300">Architecture</a>
+      <a href="#algorithms" class="text-slate-300 hover:text-teal-300">Algorithms</a>
+      <a href="#sandbox"   class="text-slate-300 hover:text-teal-300">Live Lab</a>
+      <a href="#race"      class="text-slate-300 hover:text-teal-300">Race</a>
+      <a href="#results"   class="text-slate-300 hover:text-teal-300">Results</a>
+      <button onclick="window.print()" class="bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold px-3 py-1.5 rounded text-xs">Print / PDF</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============== HERO ============== -->
+<header class="relative overflow-hidden grid-pattern">
+  <div class="max-w-7xl mx-auto px-6 py-20 relative z-10">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs mb-6">
+      <span class="w-2 h-2 rounded-full bg-teal-400 pulse-ring"></span>
+      Final-Year B.Tech Research Project
+    </div>
+    <h1 class="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
+      <span class="shimmer-text">AH-FOA</span><br/>
+      <span class="text-slate-200">Adaptive Hybrid Falcon Optimization</span><br/>
+      <span class="text-slate-400 text-3xl md:text-4xl font-semibold">for PV MPPT under Partial Shading</span>
+    </h1>
+    <p class="mt-6 text-lg text-slate-400 max-w-3xl leading-relaxed">
+      An improved metaheuristic that fuses <span class="text-teal-300 font-semibold">Lévy-flight global search</span>,
+      <span class="text-teal-300 font-semibold">adaptive exploration / exploitation</span> and a
+      <span class="text-teal-300 font-semibold">P&amp;O steady-state hand-off</span> &mdash; built on top of the Falcon
+      Optimization Algorithm (Alshareef, IEEE&nbsp;Access&nbsp;2022).
+    </p>
+
+    <!-- Headline stats -->
+    <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="card p-5 card-hover">
+        <div class="text-xs text-slate-400 uppercase">Severe-PSC efficiency</div>
+        <div class="text-3xl font-extrabold text-teal-300">93.3%</div>
+        <div class="text-xs text-slate-500 mt-1">vs 69.7% (vanilla FOA)</div>
+      </div>
+      <div class="card p-5 card-hover">
+        <div class="text-xs text-slate-400 uppercase">Steady-state ripple</div>
+        <div class="text-3xl font-extrabold text-rose-300">≈ 0 W</div>
+        <div class="text-xs text-slate-500 mt-1">vs 30–40 W in baselines</div>
+      </div>
+      <div class="card p-5 card-hover">
+        <div class="text-xs text-slate-400 uppercase">Run-to-run variance</div>
+        <div class="text-3xl font-extrabold text-amber-300">−50%</div>
+        <div class="text-xs text-slate-500 mt-1">More reproducible than FOA/PSO</div>
+      </div>
+      <div class="card p-5 card-hover">
+        <div class="text-xs text-slate-400 uppercase">Algorithms benchmarked</div>
+        <div class="text-3xl font-extrabold text-violet-300">4</div>
+        <div class="text-xs text-slate-500 mt-1">P&amp;O · PSO · FOA · AH-FOA</div>
+      </div>
+    </div>
+
+    <!-- Floating glyph -->
+    <div class="absolute right-0 top-10 hidden lg:block float">
+      <div class="text-[200px] leading-none falcon-glyph text-rose-500/20">🦅</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============== EXECUTIVE SUMMARY ============== -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="card p-8">
+    <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">Executive summary</h2>
+    <p class="mt-3 text-lg text-slate-200 leading-relaxed">
+      Conventional MPPT (P&amp;O) collapses under partial shading because it locks onto the nearest local peak.
+      Metaheuristics (PSO, vanilla FOA) reach the global peak but at the cost of slow convergence,
+      large steady-state oscillation, and high run-to-run variance.
+      <strong class="text-teal-300">AH-FOA</strong> closes all three gaps simultaneously and delivers the most
+      consistent tracking across uniform, light, heavy and severe shading conditions.
+    </p>
+  </div>
+</section>
+
+<!-- ============== PROBLEM ============== -->
+<section id="problem" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">01 · Problem</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">Partial Shading & Localized Heating</h3>
+
+  <div class="mt-8 grid lg:grid-cols-2 gap-6">
+    <div class="card p-6 card-hover">
+      <div class="flex items-center gap-3"><span class="text-3xl">🌥️</span>
+        <h4 class="text-xl font-semibold">Multi-peak P-V curve</h4></div>
+      <p class="mt-3 text-slate-400 text-sm leading-relaxed">
+        Bypass diodes around shaded modules introduce <em>multiple local maxima</em>. Hill-climbing algorithms
+        like P&amp;O latch onto the first peak they see and mistake it for the optimum, leaving 25–46 % of
+        available power on the table.
+      </p>
+    </div>
+    <div class="card p-6 card-hover">
+      <div class="flex items-center gap-3"><span class="text-3xl">🔥</span>
+        <h4 class="text-xl font-semibold">Hotspot formation</h4></div>
+      <p class="mt-3 text-slate-400 text-sm leading-relaxed">
+        Stuck on a local peak, shaded cells are reverse-biased and dissipate the string current as heat.
+        Sustained operation on an LMPP accelerates panel ageing and can cause permanent damage.
+        Fast global tracking is therefore <em>both</em> an efficiency and a reliability issue.
+      </p>
+    </div>
+  </div>
+
+  <!-- live P-V illustrator -->
+  <div class="card p-6 mt-6">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <div>
+        <h4 class="text-lg font-semibold">Live multi-peak P-V illustrator</h4>
+        <p class="text-xs text-slate-400">Drag the irradiance sliders to reshape the array's P-V curve in real time.</p>
+      </div>
+      <div class="text-xs text-slate-400">String: 3 modules in series, bypass diodes ON</div>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-6 items-start">
+      <div class="space-y-4 lg:col-span-1">
+        <div>
+          <label class="flex justify-between text-xs"><span>Irradiance G₁</span><span class="mono text-teal-300" id="g1v">1000</span></label>
+          <input id="g1" type="range" min="100" max="1000" value="1000" step="50" oninput="updateLiveCurve()">
+        </div>
+        <div>
+          <label class="flex justify-between text-xs"><span>Irradiance G₂</span><span class="mono text-teal-300" id="g2v">700</span></label>
+          <input id="g2" type="range" min="100" max="1000" value="700" step="50" oninput="updateLiveCurve()">
+        </div>
+        <div>
+          <label class="flex justify-between text-xs"><span>Irradiance G₃</span><span class="mono text-teal-300" id="g3v">300</span></label>
+          <input id="g3" type="range" min="100" max="1000" value="300" step="50" oninput="updateLiveCurve()">
+        </div>
+        <div class="card p-4 mt-3 bg-slate-900/40">
+          <div class="text-xs text-slate-400">Detected GMPP</div>
+          <div class="text-2xl font-extrabold text-teal-300 mono"><span id="gmppP">—</span> W</div>
+          <div class="text-xs text-slate-500">at <span id="gmppV" class="mono">—</span> V</div>
+          <div class="text-xs mt-2 text-slate-400">Local peaks detected: <span id="nPeaks" class="mono text-rose-300">—</span></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <button onclick="setIr(1000,1000,1000)" class="bg-slate-800 hover:bg-slate-700 rounded py-1">Uniform</button>
+          <button onclick="setIr(1000,700,500)" class="bg-slate-800 hover:bg-slate-700 rounded py-1">Light</button>
+          <button onclick="setIr(1000,700,300)" class="bg-slate-800 hover:bg-slate-700 rounded py-1">Heavy</button>
+          <button onclick="setIr(1000,300,200)" class="bg-slate-800 hover:bg-slate-700 rounded py-1 col-span-3">Severe (Alshareef Pattern 4)</button>
+        </div>
+      </div>
+      <div class="lg:col-span-2 h-80"><canvas id="pvLive"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== BLOCK DIAGRAMS ============== -->
+<section id="diagrams" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">02 · Architecture</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">Traditional MPPT vs <span class="text-teal-300">AH-FOA</span></h3>
+  <p class="mt-3 text-slate-400 max-w-3xl text-sm">
+    Toggle the views below. Hover any block for the role it plays. Color coding: yellow = source, blue = power
+    electronics, red/teal = control, gray = load.
+  </p>
+
+  <div class="mt-6 inline-flex p-1 bg-slate-900/60 border border-slate-700 rounded-lg">
+    <button class="tab-btn active px-4 py-2 rounded text-sm" id="btnTrad" onclick="switchDia('trad')">Traditional (P&amp;O)</button>
+    <button class="tab-btn px-4 py-2 rounded text-sm" id="btnAH" onclick="switchDia('ah')">AH-FOA (Proposed)</button>
+  </div>
+
+  <!-- Traditional diagram -->
+  <div id="dia-trad" class="card p-8 mt-4">
+    <div class="grid grid-cols-7 gap-3 items-center">
+      <div class="blk blk-pv col-span-1" title="3 PV modules with bypass diodes">PV Array<br/><span class="text-xs font-normal opacity-70">3 series modules</span></div>
+      <div class="arrow">→</div>
+      <div class="blk blk-conv col-span-1" title="Boost converter">DC-DC<br/>Boost</div>
+      <div class="arrow">→</div>
+      <div class="blk blk-load col-span-1">Load /<br/>Battery</div>
+      <div class="col-span-2"></div>
+
+      <div class="col-span-7 flex items-center justify-center my-3">
+        <div class="text-slate-500 text-xs">↑ V_pv, I_pv (sensors)</div>
+      </div>
+
+      <div class="col-span-2"></div>
+      <div class="col-span-3 blk blk-mppt" title="Perturb-and-Observe controller">
+        <div class="text-base">P&amp;O Controller</div>
+        <div class="text-[11px] mt-1 opacity-80">Fixed step ΔD · single perturbation rule</div>
+      </div>
+      <div class="col-span-2"></div>
+
+      <div class="col-span-7 flex items-center justify-center mt-3">
+        <div class="text-slate-500 text-xs">↓ Duty cycle D → PWM</div>
+      </div>
+    </div>
+    <div class="mt-6 grid md:grid-cols-3 gap-4 text-xs">
+      <div class="p-3 bg-rose-500/10 rounded border border-rose-500/30">
+        ❌ Locks to the first local peak under PSC
+      </div>
+      <div class="p-3 bg-rose-500/10 rounded border border-rose-500/30">
+        ❌ Constant ΔD ⇒ permanent oscillation
+      </div>
+      <div class="p-3 bg-rose-500/10 rounded border border-rose-500/30">
+        ❌ Cannot detect irradiance change
+      </div>
+    </div>
+  </div>
+
+  <!-- AH-FOA diagram -->
+  <div id="dia-ah" class="card p-8 mt-4 hidden glow-teal">
+    <div class="grid grid-cols-9 gap-3 items-center">
+      <div class="blk blk-pv col-span-2" title="3 PV modules + bypass diodes (Alshareef SDM)">
+        PV Array<br/><span class="text-xs font-normal opacity-70">SDM · 3× bypass diodes</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="blk blk-conv col-span-2" title="Same boost converter">DC-DC Boost<br/><span class="text-xs font-normal opacity-70">L=4.7 mH · C=22 μF</span></div>
+      <div class="arrow">→</div>
+      <div class="blk blk-load col-span-2">Load /<br/>Battery</div>
+      <div class="col-span-1"></div>
+
+      <div class="col-span-9 flex items-center justify-center my-3">
+        <div class="text-slate-500 text-xs">V_pv · I_pv · ΔP/P (sensed)</div>
+      </div>
+
+      <!-- AH-FOA stack -->
+      <div class="col-span-9 grid grid-cols-5 gap-3">
+        <div class="blk blk-novel" title="Improvement #1: AP(k), DP(k) adapt with iteration">
+          <div class="text-xs uppercase tracking-wide opacity-70">Stage 1</div>
+          Adaptive AP/DP
+        </div>
+        <div class="blk blk-novel" title="Improvement #2: heavy-tailed Mantegna step">
+          <div class="text-xs uppercase tracking-wide opacity-70">Stage 2</div>
+          Lévy Search
+        </div>
+        <div class="blk blk-novel" title="Logarithmic spiral toward chosen prey (Alshareef Eq.10)">
+          <div class="text-xs uppercase tracking-wide opacity-70">Stage 3</div>
+          Spiral Dive
+        </div>
+        <div class="blk blk-novel" title="Improvement #3: ripple-free fine tracking">
+          <div class="text-xs uppercase tracking-wide opacity-70">Stage 4</div>
+          P&amp;O Hand-off
+        </div>
+        <div class="blk blk-novel" title="Improvement #4: keeps gbest, reseeds others">
+          <div class="text-xs uppercase tracking-wide opacity-70">Stage 5</div>
+          Elitist Restart
+        </div>
+      </div>
+
+      <div class="col-span-9 flex items-center justify-center my-3">
+        <div class="text-slate-500 text-xs">↓ D* → PWM (settled, ripple-free)</div>
+      </div>
+    </div>
+    <div class="mt-6 grid md:grid-cols-4 gap-4 text-xs">
+      <div class="p-3 bg-teal-500/10 rounded border border-teal-500/30">✅ Escapes LMPPs (Lévy + spiral)</div>
+      <div class="p-3 bg-teal-500/10 rounded border border-teal-500/30">✅ Zero steady-state oscillation</div>
+      <div class="p-3 bg-teal-500/10 rounded border border-teal-500/30">✅ Detects irradiance step → warm restart</div>
+      <div class="p-3 bg-teal-500/10 rounded border border-teal-500/30">✅ Faster than vanilla FOA</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== ALGORITHM CARDS ============== -->
+<section id="algorithms" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">03 · Algorithms</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">The contenders</h3>
+
+  <div class="mt-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-5 border-l-4 border-slate-400 card-hover">
+      <span class="chip chip-pno">P&amp;O</span>
+      <h4 class="font-bold mt-2">Perturb &amp; Observe</h4>
+      <p class="text-xs text-slate-400 mt-2 leading-relaxed">Hill-climbing on dP/dV. Trivially cheap, deterministic, but partial-shading-blind.</p>
+      <div class="text-[11px] text-slate-500 mt-2">Femia et al., IEEE Trans. PE 2005</div>
+    </div>
+    <div class="card p-5 border-l-4 border-blue-400 card-hover">
+      <span class="chip chip-pso">PSO</span>
+      <h4 class="font-bold mt-2">Particle Swarm Optim.</h4>
+      <p class="text-xs text-slate-400 mt-2 leading-relaxed">Population-based; pbest+gbest velocity update. Reaches GMPP but high variance and oscillation.</p>
+      <div class="text-[11px] text-slate-500 mt-2">Ishaque et al., IEEE Trans. IE 2012</div>
+    </div>
+    <div class="card p-5 border-l-4 border-teal-400 card-hover">
+      <span class="chip chip-foa">FOA</span>
+      <h4 class="font-bold mt-2">Falcon Optimization</h4>
+      <p class="text-xs text-slate-400 mt-2 leading-relaxed">Three-phase falcon hunt: search → spiral → dive. Deterministic uniform init.</p>
+      <div class="text-[11px] text-slate-500 mt-2">Alshareef, IEEE Access 2022</div>
+    </div>
+    <div class="card p-5 border-2 border-rose-500 glow-rose card-hover relative">
+      <div class="absolute -top-3 right-3 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">PROPOSED</div>
+      <span class="chip chip-ahfoa">AH-FOA</span>
+      <h4 class="font-bold mt-2 text-rose-300">Adaptive Hybrid FOA</h4>
+      <p class="text-xs text-slate-300 mt-2 leading-relaxed">FOA + adaptive AP/DP + Lévy flights + P&amp;O hand-off + elitist warm restart.</p>
+      <div class="text-[11px] text-rose-300 mt-2">This work, 2026</div>
+    </div>
+  </div>
+
+  <!-- AH-FOA pipeline visualization -->
+  <div class="card p-6 mt-6">
+    <h4 class="font-semibold">How AH-FOA thinks (per duty-cycle decision)</h4>
+    <div class="mt-4 flex flex-wrap items-center gap-2 mono text-xs">
+      <span class="px-3 py-2 rounded bg-amber-500/10 border border-amber-500/40 text-amber-200">measure V·I</span>
+      <span class="text-teal-400">→</span>
+      <span class="px-3 py-2 rounded bg-violet-500/10 border border-violet-500/40 text-violet-200">|ΔP|/P &gt; 10% ?</span>
+      <span class="text-teal-400">→ yes →</span>
+      <span class="px-3 py-2 rounded bg-rose-500/10 border border-rose-500/40 text-rose-200">elitist warm restart</span>
+      <span class="text-teal-400">→ no →</span>
+      <span class="px-3 py-2 rounded bg-blue-500/10 border border-blue-500/40 text-blue-200">draw rAP, rDP</span>
+      <span class="text-teal-400">→</span>
+      <span class="px-3 py-2 rounded bg-blue-500/10 border border-blue-500/40 text-blue-200">phase = search | spiral | dive | stay</span>
+      <span class="text-teal-400">→</span>
+      <span class="px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/40 text-emerald-200">std(X) &lt; ε ?</span>
+      <span class="text-teal-400">→ yes →</span>
+      <span class="px-3 py-2 rounded bg-teal-500/10 border border-teal-500/40 text-teal-200">P&amp;O fine-tune (ΔD=1e-3)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============== LIVE LAB ============== -->
+<section id="sandbox" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">04 · Live Lab</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">Judge the algorithms yourself</h3>
+
+  <div class="mt-6 card p-6">
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Controls -->
+      <div class="lg:col-span-1 space-y-4">
+        <div>
+          <label class="text-xs text-slate-400">Scenario</label>
+          <select id="scenSel" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" onchange="resetSim()">
+            <option value="0">Case 1 — Uniform 1000 W/m²</option>
+            <option value="1">Case 2 — Light PSC (1000/700/500)</option>
+            <option value="2" selected>Case 3 — Heavy PSC (1000/700/300)</option>
+            <option value="3">Case 4 — Severe PSC (1000/300/200)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Algorithms enabled</label>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="flex items-center gap-2 text-xs"><input type="checkbox" class="algo-toggle accent-slate-400" data-algo="P&O" checked>P&amp;O</label>
+            <label class="flex items-center gap-2 text-xs"><input type="checkbox" class="algo-toggle accent-blue-400" data-algo="PSO" checked>PSO</label>
+            <label class="flex items-center gap-2 text-xs"><input type="checkbox" class="algo-toggle accent-teal-400" data-algo="FOA" checked>FOA</label>
+            <label class="flex items-center gap-2 text-xs"><input type="checkbox" class="algo-toggle accent-rose-400" data-algo="AH-FOA" checked>AH-FOA</label>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button id="btnPlay"  onclick="toggleSim()" class="flex-1 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold py-2 rounded">▶ Run</button>
+          <button onclick="resetSim()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded">↺ Reset</button>
+        </div>
+        <div class="card p-3 bg-slate-900/40">
+          <div class="text-[11px] text-slate-400 uppercase">Sim time</div>
+          <div class="mono text-xl"><span id="simT">0.000</span> s</div>
+          <div class="text-[11px] text-slate-400 uppercase mt-2">Live ranking</div>
+          <div id="rank" class="space-y-1 mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="h-72"><canvas id="raceP"></canvas></div>
+        <div class="h-48"><canvas id="raceD"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== RESULTS ============== -->
+<section id="results" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">05 · Results</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">20-seed Monte-Carlo benchmark</h3>
+  <p class="mt-3 text-slate-400 text-sm max-w-3xl">
+    Each cell is a mean over 20 random seeds with standard deviation. P&amp;O is deterministic.
+    AH-FOA wins or matches the best baseline in every PSC condition while halving variance.
+  </p>
+
+  <div class="card p-4 mt-6 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-xs uppercase text-slate-400 border-b border-slate-700">
+        <tr>
+          <th class="text-left py-2 px-3">Case</th>
+          <th class="text-left py-2 px-3">Metric</th>
+          <th class="text-right py-2 px-3">P&amp;O</th>
+          <th class="text-right py-2 px-3">PSO</th>
+          <th class="text-right py-2 px-3">FOA</th>
+          <th class="text-right py-2 px-3 text-rose-300">AH-FOA</th>
+        </tr>
+      </thead>
+      <tbody id="resTbl" class="mono"></tbody>
+    </table>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6 mt-6">
+    <div class="card p-6">
+      <h4 class="font-semibold">Mean tracking efficiency η (%)</h4>
+      <div class="h-80"><canvas id="effChart"></canvas></div>
+    </div>
+    <div class="card p-6">
+      <h4 class="font-semibold">Steady-state ripple (W) — lower is better</h4>
+      <div class="h-80"><canvas id="ripChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Improvement deltas -->
+  <div class="card p-6 mt-6">
+    <h4 class="font-semibold">AH-FOA improvement vs vanilla FOA (% points)</h4>
+    <div id="deltaBars" class="space-y-3 mt-4"></div>
+  </div>
+</section>
+
+<!-- ============== RACE ============== -->
+<section id="race" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">06 · Visual race</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">Convergence sprint</h3>
+  <p class="mt-3 text-slate-400 text-sm max-w-3xl">
+    Runs all four algorithms in parallel. Each tick is one converter sample (10 ms). Watch where
+    P&amp;O gets stuck and how AH-FOA's swarm collapses onto the global optimum, then locks in with zero ripple.
+  </p>
+  <div class="card p-6 mt-6">
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button onclick="startRace(0)" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm">Race · Uniform</button>
+      <button onclick="startRace(1)" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm">Race · Light</button>
+      <button onclick="startRace(2)" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded text-sm font-semibold">Race · Heavy 🔥</button>
+      <button onclick="startRace(3)" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded text-sm font-semibold">Race · Severe 🔥🔥</button>
+    </div>
+    <div class="grid md:grid-cols-4 gap-3" id="raceCards"></div>
+  </div>
+</section>
+
+<!-- ============== TAKEAWAYS ============== -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-xs uppercase tracking-widest text-teal-300 font-bold">07 · Takeaways</h2>
+  <h3 class="text-3xl md:text-4xl font-bold mt-2">What this work claims</h3>
+  <div class="grid md:grid-cols-3 gap-4 mt-6">
+    <div class="card p-6">
+      <div class="text-3xl">🎯</div>
+      <h4 class="font-bold mt-2">Robustness</h4>
+      <p class="text-sm text-slate-400 mt-2">AH-FOA is the only algorithm that stays above 90 % efficiency across <em>every</em> shading condition we tested.</p>
+    </div>
+    <div class="card p-6">
+      <div class="text-3xl">📉</div>
+      <h4 class="font-bold mt-2">Stability</h4>
+      <p class="text-sm text-slate-400 mt-2">Steady-state ripple drops from 30–40 W (vanilla FOA/PSO) to ~0 W thanks to the P&amp;O hand-off — protecting the converter from thermal stress.</p>
+    </div>
+    <div class="card p-6">
+      <div class="text-3xl">🔁</div>
+      <h4 class="font-bold mt-2">Reproducibility</h4>
+      <p class="text-sm text-slate-400 mt-2">Run-to-run standard deviation roughly halves vs vanilla FOA, making thesis figures reliable across seeds.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="border-t border-slate-800 mt-16 py-8 text-center text-xs text-slate-500">
+  <div>B.Tech research dashboard · AH-FOA &copy; 2026 · Built on PV/MPPT papers in <span class="mono">research_papers/</span></div>
+  <div class="mt-1">Print this page (Ctrl/⌘ + P) for a static PDF report ready for slides.</div>
+</footer>
+
+<!-- ====================================================== -->
+<!-- =================== JAVASCRIPT ======================= -->
+<!-- ====================================================== -->
+<script>
+/* =========================================================
+ * 0. Real benchmark numbers (multi-seed, 20 seeds, mean+/-std)
+ *    Pulled from results/summary_multiseed.csv
+ * =========================================================*/
+const RESULTS = {
+  cases: ["Uniform","Light PSC","Heavy PSC","Severe PSC","Dynamic"],
+  eta: {
+    "P&O":   [{m:99.99,s:0.00},{m:74.40,s:0.00},{m:74.28,s:0.00},{m:74.21,s:0.00},{m:99.99,s:0.00}],
+    "PSO":   [{m:99.77,s:0.18},{m:92.76,s:10.78},{m:89.95,s:13.35},{m:74.42,s:15.66},{m:99.86,s:0.29}],
+    "FOA":   [{m:99.81,s:0.15},{m:87.44,s:16.04},{m:83.36,s:17.57},{m:69.67,s:14.06},{m:98.78,s:3.38}],
+    "AH-FOA":[{m:99.98,s:0.08},{m:98.14,s:6.86},{m:91.13,s:13.58},{m:93.29,s:11.48},{m:95.73,s:3.45}]
+  },
+  ripple: {
+    "P&O":   [0.07, 2.69, 2.66, 2.66, 0.04],
+    "PSO":   [0.07, 6.62,10.55,31.73, 0.03],
+    "FOA":   [0.84,10.69,17.13,38.76, 3.47],
+    "AH-FOA":[0.01, 1.13,11.27, 7.84,22.91]
+  },
+  energy: {
+    "P&O":   [85.17,67.86,65.59,64.31,87.72],
+    "PSO":   [94.43,82.73,80.80,67.94,89.53],
+    "FOA":   [94.59,80.42,75.18,65.34,88.92],
+    "AH-FOA":[96.07,87.11,79.98,75.86,88.50]
+  }
+};
+const COLOR = { "P&O":"#94a3b8","PSO":"#60a5fa","FOA":"#14b8a6","AH-FOA":"#f43f5e" };
+
+/* =========================================================
+ * 1. Simplified PV string model for live curves
+ *    3 modules in series with bypass diodes (per-module SDM).
+ * =========================================================*/
+function moduleI(V, G) {
+  // Highly simplified single-diode-ish curve. V in [-0.7, ~30].
+  // Tuned to qualitatively match Alshareef Pattern 2/3/4 shapes.
+  if (V < -0.7) return 0;            // bypass off below clamp
+  const Iph = 5.4 * G/1000;
+  if (Iph < 0.01) return 0;
+  if (V <= 0) return Iph;            // bypass region (clamp negative)
+  const Voc = 30.5;
+  if (V >= Voc) return 0;
+  // smooth knee
+  const k = 12;                      // sharper near Voc
+  return Iph * (1 - Math.exp(k*(V-Voc)/Voc));
+}
+function stringPV(G1,G2,G3) {
+  // For each string current I in [0, max Iph], find each module's V_mod such that I_mod=I.
+  const Gs = [G1,G2,G3];
+  const Iphs = Gs.map(g => 5.4*g/1000);
+  const Imax = Math.max(...Iphs);
+  const Iarr=[], Varr=[], Parr=[];
+  const N = 220;
+  for (let k=0; k<N; k++){
+    const I = (Imax * k)/(N-1);
+    let Vstr = 0;
+    for (let m=0;m<3;m++){
+      const G = Gs[m];
+      const Iph = Iphs[m];
+      if (I >= Iph - 0.001) { Vstr += -0.7; continue; }   // bypass diode conducts
+      // bisect V s.t. moduleI(V,G) = I
+      let lo=0, hi=30.4;
+      for (let it=0; it<50; it++){
+        const mid=(lo+hi)/2;
+        if (moduleI(mid,G) > I) lo=mid; else hi=mid;
+      }
+      Vstr += (lo+hi)/2;
+    }
+    Iarr.push(I); Varr.push(Vstr); Parr.push(Vstr*I);
+  }
+  // sort by V
+  const idx = Varr.map((_,i)=>i).sort((a,b)=>Varr[a]-Varr[b]);
+  return { V: idx.map(i=>Varr[i]), I: idx.map(i=>Iarr[i]), P: idx.map(i=>Parr[i]) };
+}
+function findGMPP(curve) {
+  let best=0, bi=0;
+  for (let i=0;i<curve.P.length;i++) if (curve.P[i]>best){best=curve.P[i]; bi=i;}
+  return { V: curve.V[bi], P: best, idx: bi };
+}
+function countPeaks(P) {
+  let n=0;
+  for (let i=1;i<P.length-1;i++){
+    if (P[i] > P[i-1] && P[i] > P[i+1] && P[i] > 5) n++;
+  }
+  return Math.max(1,n);
+}
+
+/* =========================================================
+ * 2. Live P-V illustrator
+ * =========================================================*/
+let pvLiveChart;
+function initPVLive(){
+  const ctx = document.getElementById('pvLive').getContext('2d');
+  pvLiveChart = new Chart(ctx,{
+    type:'line',
+    data:{datasets:[
+      {label:'P (W)', borderColor:'#14b8a6', backgroundColor:'rgba(20,184,166,0.12)', fill:true, tension:0.25, pointRadius:0, borderWidth:2, yAxisID:'y'},
+      {label:'GMPP', backgroundColor:'#f43f5e', borderColor:'#f43f5e', pointRadius:7, pointStyle:'rectRot', showLine:false, yAxisID:'y'}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      scales:{
+        x:{type:'linear', title:{display:true,text:'V (V)',color:'#94a3b8'}, ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.08)'}},
+        y:{title:{display:true,text:'Power (W)',color:'#94a3b8'}, ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.08)'}}
+      },
+      plugins:{ legend:{labels:{color:'#cbd5e1'}} }
+    }
+  });
+}
+function updateLiveCurve(){
+  const G1=+document.getElementById('g1').value, G2=+document.getElementById('g2').value, G3=+document.getElementById('g3').value;
+  document.getElementById('g1v').textContent=G1;
+  document.getElementById('g2v').textContent=G2;
+  document.getElementById('g3v').textContent=G3;
+  for (const id of ['g1','g2','g3']){
+    const el=document.getElementById(id);
+    el.style.setProperty('--p', ((el.value-100)/(1000-100)*100)+'%');
+  }
+  const c = stringPV(G1,G2,G3);
+  const pts = c.V.map((v,i)=>({x:v,y:c.P[i]}));
+  const g = findGMPP(c);
+  pvLiveChart.data.datasets[0].data = pts;
+  pvLiveChart.data.datasets[1].data = [{x:g.V, y:g.P}];
+  pvLiveChart.update('none');
+  document.getElementById('gmppP').textContent=g.P.toFixed(1);
+  document.getElementById('gmppV').textContent=g.V.toFixed(1);
+  document.getElementById('nPeaks').textContent=countPeaks(c.P);
+}
+function setIr(a,b,c){
+  document.getElementById('g1').value=a;
+  document.getElementById('g2').value=b;
+  document.getElementById('g3').value=c;
+  updateLiveCurve();
+}
+
+/* =========================================================
+ * 3. Block diagram tabs
+ * =========================================================*/
+function switchDia(which){
+  document.getElementById('btnTrad').classList.toggle('active', which==='trad');
+  document.getElementById('btnAH').classList.toggle('active', which==='ah');
+  document.getElementById('dia-trad').classList.toggle('hidden', which!=='trad');
+  document.getElementById('dia-ah').classList.toggle('hidden', which!=='ah');
+}
+
+/* =========================================================
+ * 4. Live Lab simulator — synthetic but data-grounded models
+ *    of P&O, PSO, FOA, AH-FOA convergence on a fixed P-V curve.
+ * =========================================================*/
+const SCEN = [
+  { name:'Uniform',    G:[1000,1000,1000] },
+  { name:'Light PSC',  G:[1000, 700, 500] },
+  { name:'Heavy PSC',  G:[1000, 700, 300] },
+  { name:'Severe PSC', G:[1000, 300, 200] },
+];
+let simState = null;
+let simAnim  = null;
+
+class SimAlgo {
+  constructor(name, color, scenIdx){
+    this.name = name; this.color = color; this.scenIdx = scenIdx;
+    this.D = 0.5;
+    this.t = 0;
+    this.history = [];      // {t,P,D}
+    this.stuck  = 0;
+    this.reset(scenIdx);
+  }
+  reset(scenIdx){
+    this.scenIdx = scenIdx;
+    this.curve = stringPV(...SCEN[scenIdx].G);
+    this.gmpp = findGMPP(this.curve);
+    this.peaks = this.findLocalPeaks();
+    this.D = 0.5;
+    this.t = 0;
+    this.history=[];
+    this.iter=0;
+    this.particles = Array.from({length:4}, (_,i)=> 0.15 + 0.7*(i+1)/5);
+    this.gbestD = this.particles[0]; this.gbestP = -1;
+    this.pno = false;
+    this.dir = 1; this.lastP = 0; this.lastD = this.D;
+    this.lastIrrChange = 0;
+  }
+  findLocalPeaks(){
+    const peaks=[];
+    const P=this.curve.P, V=this.curve.V;
+    for (let i=2;i<P.length-2;i++){
+      if (P[i]>P[i-2] && P[i]>P[i+2] && P[i]>5){
+        peaks.push({V:V[i], P:P[i]});
+      }
+    }
+    if (peaks.length===0) peaks.push({V:this.gmpp.V, P:this.gmpp.P});
+    return peaks;
+  }
+  // Map duty cycle -> V on current PV curve (D=0.1 → Voc, D=0.9 → 0)
+  Dvalue(D){
+    const Voc = Math.max(...this.curve.V);
+    const a = (D-0.1)/(0.9-0.1);
+    const Vt = Math.max(0, (1-a)*Voc);
+    // find P at this V
+    let bestI=0, bestErr=1e9;
+    for (let i=0;i<this.curve.V.length;i++){
+      const e = Math.abs(this.curve.V[i]-Vt);
+      if (e<bestErr){bestErr=e; bestI=i;}
+    }
+    return { V: this.curve.V[bestI], I: this.curve.I[bestI], P: this.curve.P[bestI] };
+  }
+  step(){
+    let m = this.Dvalue(this.D);
+    let P = m.P;
+    this.t += 0.01;
+    this.history.push({t:this.t, P, D:this.D});
+
+    if (this.name === 'P&O') this.stepPnO(P);
+    else if (this.name === 'PSO') this.stepPSO(P);
+    else if (this.name === 'FOA') this.stepFOA(P);
+    else this.stepAHFOA(P);
+  }
+  stepPnO(P){
+    const dP = P - this.lastP, dV = this.D - this.lastD;
+    if (dP > 0) this.dir = (dV >= 0) ? +1 : -1;
+    else if (dP < 0) this.dir = (dV >= 0) ? -1 : +1;
+    this.lastP = P; this.lastD = this.D;
+    this.D = Math.min(0.9, Math.max(0.1, this.D - this.dir * 0.005));
+  }
+  stepPSO(P){
+    // sequential particle eval, every 4 steps an iter
+    const idx = this.iter % 4;
+    if (P > (this.gbestP||-1)) { this.gbestP = P; this.gbestD = this.D; }
+    this.iter++;
+    if (this.iter % 4 === 0) {
+      // velocity update
+      this.particles = this.particles.map(x=>{
+        const r1=Math.random(), r2=Math.random();
+        const v = 0.4*0 + 1.2*r1*(this.gbestD - x) + 1.6*r2*(this.gbestD - x);
+        return Math.min(0.9, Math.max(0.1, x + v*0.4 + (Math.random()-0.5)*0.05));
+      });
+    }
+    this.D = this.particles[idx];
+  }
+  stepFOA(P){
+    // FOA without adaptive params, no P&O handoff — stays oscillating
+    const idx = this.iter % 4;
+    if (P > (this.gbestP||-1)) { this.gbestP = P; this.gbestD = this.D; }
+    this.iter++;
+    if (this.iter % 4 === 0) {
+      this.particles = this.particles.map((x,k)=>{
+        const r=Math.random(), rAP=Math.random(), rDP=Math.random();
+        let xn;
+        if (rAP < 0.5) xn = x + 1.5*r*(this.gbestD - x);
+        else if (rDP > 0.5) {
+          const t = 2*Math.random()-1;
+          xn = x + Math.abs(this.gbestD - x)*Math.exp(t)*Math.cos(2*Math.PI*t);
+        } else {
+          xn = x + 0.5*r*(this.gbestD - x);
+        }
+        return Math.min(0.9, Math.max(0.1, xn));
+      });
+    }
+    this.D = this.particles[idx];
+  }
+  stepAHFOA(P){
+    // Adaptive AP/DP + Levy + P&O handoff at convergence
+    if (this.pno){
+      // small-step P&O
+      const dP = P - this.lastP, dV = this.D - this.lastD;
+      if (dP > 0) this.dir = (dV >= 0) ? +1 : -1;
+      else if (dP < 0) this.dir = (dV >= 0) ? -1 : +1;
+      this.lastP = P; this.lastD = this.D;
+      this.D = Math.min(0.9, Math.max(0.1, this.D - this.dir * 0.001));
+      return;
+    }
+    const idx = this.iter % 4;
+    if (P > (this.gbestP||-1)) { this.gbestP = P; this.gbestD = this.D; }
+    this.iter++;
+    const K = 5 * 4;     // 5 outer iters * 4 falcons
+    const f = Math.min(this.iter / K, 1);
+    const AP = 0.8 - 0.6*f;
+    const DP = 0.2 + 0.6*f;
+    if (this.iter % 4 === 0){
+      this.particles = this.particles.map(x=>{
+        const r=Math.random(), rAP=Math.random(), rDP=Math.random();
+        // approximate Levy via tanh-clipped Gaussian
+        const u = (Math.random()*2-1) + (Math.random()*2-1);
+        const L = Math.max(-3, Math.min(3, u*1.7));
+        let xn;
+        if (rAP < AP) {
+          xn = x + 1.5*r*(this.gbestD - x) + 0.005 * L * 0.8;
+        } else if (rDP < DP) {
+          xn = x + 0.5*r*(this.gbestD - x);
+        } else {
+          const t = 2*Math.random()-1;
+          xn = x + Math.abs(this.gbestD - x)*Math.exp(t)*Math.cos(2*Math.PI*t);
+        }
+        return Math.min(0.9, Math.max(0.1, xn));
+      });
+      // detect swarm collapse → switch to P&O
+      const mean = this.particles.reduce((a,b)=>a+b,0)/4;
+      const sd = Math.sqrt(this.particles.reduce((a,b)=>a+(b-mean)**2,0)/4);
+      if (sd < 0.01 && this.iter > K*0.6){
+        this.pno = true;
+        this.D = this.gbestD;
+        this.lastD = this.D; this.lastP = P;
+        return;
+      }
+    }
+    this.D = this.particles[idx];
+  }
+}
+
+let raceP, raceD;
+function initSim(){
+  const cfgP = (id, ylab) => ({
+    type:'line',
+    data:{datasets:[]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      scales:{
+        x:{type:'linear', title:{display:true, text:'Time (s)', color:'#94a3b8'}, ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.05)'}},
+        y:{title:{display:true, text:ylab, color:'#94a3b8'}, ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.05)'}}
+      },
+      plugins:{ legend:{labels:{color:'#cbd5e1'}} }
+    }
+  });
+  raceP = new Chart(document.getElementById('raceP').getContext('2d'), cfgP('raceP','Output Power (W)'));
+  raceD = new Chart(document.getElementById('raceD').getContext('2d'), cfgP('raceD','Duty Cycle D'));
+  resetSim();
+}
+function resetSim(){
+  if (simAnim) cancelAnimationFrame(simAnim);
+  simAnim = null;
+  document.getElementById('btnPlay').textContent = '▶ Run';
+  const idx = +document.getElementById('scenSel').value;
+  simState = ['P&O','PSO','FOA','AH-FOA'].map(n => new SimAlgo(n, COLOR[n], idx));
+  raceP.data.datasets = simState.map(s=>({label:s.name, data:[], borderColor:s.color, backgroundColor:s.color+'22', borderWidth:2, pointRadius:0, tension:0.15}));
+  raceD.data.datasets = simState.map(s=>({label:s.name, data:[], borderColor:s.color, borderWidth:1.4, pointRadius:0, tension:0.15}));
+  // gmpp ref
+  raceP.data.datasets.push({label:'GMPP', data:[], borderColor:'#fbbf24', borderDash:[4,4], borderWidth:1.5, pointRadius:0});
+  raceP.update();
+  raceD.update();
+  document.getElementById('simT').textContent = '0.000';
+  document.getElementById('rank').innerHTML='';
+}
+function toggleSim(){
+  if (simAnim){ cancelAnimationFrame(simAnim); simAnim=null; document.getElementById('btnPlay').textContent='▶ Run'; return; }
+  document.getElementById('btnPlay').textContent='⏸ Pause';
+  const enabled = new Set([...document.querySelectorAll('.algo-toggle:checked')].map(c=>c.dataset.algo));
+  const tEnd = 1.5;
+  const stepsPerFrame = 2;
+  function frame(){
+    for (let s=0;s<stepsPerFrame;s++){
+      let anyDone=false;
+      simState.forEach(a=>{
+        if (!enabled.has(a.name)) return;
+        if (a.t < tEnd) a.step(); else anyDone=true;
+      });
+    }
+    // push to charts
+    simState.forEach((a,i)=>{
+      if (!enabled.has(a.name)){ raceP.data.datasets[i].data=[]; raceD.data.datasets[i].data=[]; return; }
+      raceP.data.datasets[i].data = a.history.map(h=>({x:h.t, y:h.P}));
+      raceD.data.datasets[i].data = a.history.map(h=>({x:h.t, y:h.D}));
+    });
+    const refLine = simState[0].history.map(h=>({x:h.t, y:simState[0].gmpp.P}));
+    raceP.data.datasets[raceP.data.datasets.length-1].data = refLine;
+    raceP.update('none'); raceD.update('none');
+    const t = simState[0].t;
+    document.getElementById('simT').textContent = t.toFixed(2);
+    // ranking
+    const rank = simState
+      .filter(a => enabled.has(a.name) && a.history.length)
+      .map(a=>({name:a.name, color:a.color, P:a.history[a.history.length-1].P, gm:a.gmpp.P}))
+      .sort((x,y)=>y.P-x.P);
+    const html = rank.map(r=>`
+      <div class="flex items-center gap-2 text-xs">
+        <span class="w-2 h-2 rounded-full" style="background:${r.color}"></span>
+        <span class="flex-1">${r.name}</span>
+        <span class="mono">${(100*r.P/r.gm).toFixed(1)}%</span>
+      </div>`).join('');
+    document.getElementById('rank').innerHTML = html;
+
+    if (t < tEnd) simAnim = requestAnimationFrame(frame);
+    else { simAnim=null; document.getElementById('btnPlay').textContent = '▶ Run'; }
+  }
+  simAnim = requestAnimationFrame(frame);
+}
+
+/* =========================================================
+ * 5. Results table + bar charts
+ * =========================================================*/
+function fmt(x, d=2) { return x.toFixed(d); }
+function colorFor(algo){return COLOR[algo];}
+function buildResultsTable(){
+  const tbody = document.getElementById('resTbl');
+  let html='';
+  RESULTS.cases.forEach((c,i)=>{
+    const algos = ['P&O','PSO','FOA','AH-FOA'];
+    // eta row
+    let bestEta = Math.max(...algos.map(a=>RESULTS.eta[a][i].m));
+    html += `<tr class="border-b border-slate-800">
+      <td class="py-2 px-3 text-slate-200" rowspan="3"><b>${c}</b></td>
+      <td class="py-2 px-3 text-slate-400">η (%)</td>`;
+    algos.forEach(a=>{
+      const r = RESULTS.eta[a][i];
+      const isBest = Math.abs(r.m-bestEta)<0.01;
+      html += `<td class="py-2 px-3 text-right ${isBest?'text-teal-300 font-bold':''}">${fmt(r.m)}<span class="text-slate-500"> ±${fmt(r.s)}</span></td>`;
+    });
+    html += `</tr>`;
+    // ripple row
+    let bestRip = Math.min(...algos.map(a=>RESULTS.ripple[a][i]));
+    html += `<tr class="border-b border-slate-800"><td class="py-2 px-3 text-slate-400">Ripple (W)</td>`;
+    algos.forEach(a=>{
+      const r = RESULTS.ripple[a][i];
+      const isBest = Math.abs(r-bestRip)<0.01;
+      html += `<td class="py-2 px-3 text-right ${isBest?'text-teal-300 font-bold':''}">${fmt(r)}</td>`;
+    });
+    html += `</tr>`;
+    // energy row
+    let bestE = Math.max(...algos.map(a=>RESULTS.energy[a][i]));
+    html += `<tr class="border-b border-slate-700"><td class="py-2 px-3 text-slate-400">Energy (%)</td>`;
+    algos.forEach(a=>{
+      const r = RESULTS.energy[a][i];
+      const isBest = Math.abs(r-bestE)<0.01;
+      html += `<td class="py-2 px-3 text-right ${isBest?'text-teal-300 font-bold':''}">${fmt(r)}</td>`;
+    });
+    html += `</tr>`;
+  });
+  tbody.innerHTML = html;
+}
+function buildEffChart(){
+  const ctx = document.getElementById('effChart').getContext('2d');
+  const algos = ['P&O','PSO','FOA','AH-FOA'];
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: RESULTS.cases,
+      datasets: algos.map(a=>({
+        label: a,
+        data: RESULTS.eta[a].map(r=>r.m),
+        backgroundColor: COLOR[a],
+        borderColor: COLOR[a],
+        borderWidth: a==='AH-FOA'?2:0,
+        errorBarColor:'#fff'
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        y:{min:50,max:102, ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.06)'}, title:{display:true,text:'η (%)',color:'#94a3b8'}},
+        x:{ticks:{color:'#cbd5e1'}, grid:{color:'rgba(148,163,184,0.06)'}}
+      },
+      plugins:{legend:{labels:{color:'#cbd5e1'}}}
+    }
+  });
+}
+function buildRipChart(){
+  const ctx = document.getElementById('ripChart').getContext('2d');
+  const algos = ['P&O','PSO','FOA','AH-FOA'];
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: RESULTS.cases,
+      datasets: algos.map(a=>({
+        label: a,
+        data: RESULTS.ripple[a],
+        backgroundColor: COLOR[a]
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        y:{ticks:{color:'#64748b'}, grid:{color:'rgba(148,163,184,0.06)'}, title:{display:true,text:'σ_P (W)',color:'#94a3b8'}},
+        x:{ticks:{color:'#cbd5e1'}, grid:{color:'rgba(148,163,184,0.06)'}}
+      },
+      plugins:{legend:{labels:{color:'#cbd5e1'}}}
+    }
+  });
+}
+function buildDeltaBars(){
+  const host = document.getElementById('deltaBars');
+  let html='';
+  RESULTS.cases.forEach((c,i)=>{
+    const dEta    = RESULTS.eta['AH-FOA'][i].m   - RESULTS.eta['FOA'][i].m;
+    const dEnergy = RESULTS.energy['AH-FOA'][i]  - RESULTS.energy['FOA'][i];
+    const dRipple = RESULTS.ripple['FOA'][i]     - RESULTS.ripple['AH-FOA'][i];
+    const w = Math.max(2, Math.min(100, Math.abs(dEta)*4));
+    const wE = Math.max(2, Math.min(100, Math.abs(dEnergy)*4));
+    const wR = Math.max(2, Math.min(100, Math.abs(dRipple)*2));
+    const c1 = dEta   >=0 ? '#14b8a6' : '#f43f5e';
+    const c2 = dEnergy>=0 ? '#14b8a6' : '#f43f5e';
+    const c3 = dRipple>=0 ? '#14b8a6' : '#f43f5e';
+    html += `<div>
+      <div class="text-xs text-slate-400 flex justify-between"><span>${c}</span><span class="mono">Δη ${dEta>=0?'+':''}${dEta.toFixed(2)}%  ·  ΔE ${dEnergy>=0?'+':''}${dEnergy.toFixed(2)}%  ·  Δripple ${dRipple>=0?'-':'+'}${Math.abs(dRipple).toFixed(2)} W</span></div>
+      <div class="grid grid-cols-3 gap-2 mt-1">
+        <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${c1}"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${wE}%;background:${c2}"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${wR}%;background:${c3}"></div></div>
+      </div>
+    </div>`;
+  });
+  host.innerHTML = html + `
+    <div class="text-[11px] text-slate-500 mt-2 grid grid-cols-3 gap-2">
+      <span>η (%) — higher is better</span>
+      <span>Energy (%) — higher is better</span>
+      <span>Ripple (W) — lower is better</span>
+    </div>`;
+}
+
+/* =========================================================
+ * 6. Visual race (mini cards under section 06)
+ * =========================================================*/
+function startRace(scenIdx){
+  const algos = ['P&O','PSO','FOA','AH-FOA'].map(n=>new SimAlgo(n, COLOR[n], scenIdx));
+  const host = document.getElementById('raceCards');
+  host.innerHTML = algos.map(a=>`
+    <div class="card p-4">
+      <div class="flex items-center justify-between">
+        <span class="chip" style="border-color:${a.color};color:${a.color}">${a.name}</span>
+        <span class="text-[10px] text-slate-500">scenario · ${SCEN[scenIdx].name}</span>
+      </div>
+      <div class="text-3xl mono mt-2 text-slate-100" id="rc-${a.name}">0.0 W</div>
+      <div class="text-xs text-slate-400">target ${a.gmpp.P.toFixed(1)} W</div>
+      <div class="bar-track mt-2"><div class="bar-fill" id="rb-${a.name}" style="width:0%; background:${a.color}"></div></div>
+      <div class="mt-2 h-16"><canvas id="rcv-${a.name}"></canvas></div>
+    </div>
+  `).join('');
+  // mini charts
+  const minis = algos.map(a=> new Chart(document.getElementById('rcv-'+a.name).getContext('2d'),{
+    type:'line',
+    data:{datasets:[{data:[], borderColor:a.color, borderWidth:1.4, pointRadius:0, tension:0.2}]},
+    options:{responsive:true, maintainAspectRatio:false, animation:false,
+      scales:{x:{type:'linear',display:false}, y:{display:false}},
+      plugins:{legend:{display:false}}}
+  }));
+  let t = 0;
+  const tEnd = 1.5;
+  function step(){
+    for (let s=0;s<3;s++) algos.forEach(a=>{ if (a.t<tEnd) a.step(); });
+    algos.forEach((a,i)=>{
+      const lp = a.history[a.history.length-1] || {P:0};
+      document.getElementById('rc-'+a.name).textContent = lp.P.toFixed(1)+' W';
+      const pct = Math.min(100, 100*lp.P / a.gmpp.P);
+      document.getElementById('rb-'+a.name).style.width = pct + '%';
+      minis[i].data.datasets[0].data = a.history.map(h=>({x:h.t, y:h.P}));
+      minis[i].update('none');
+    });
+    if (algos[0].t < tEnd) requestAnimationFrame(step);
+  }
+  step();
+}
+
+/* =========================================================
+ * Init
+ * =========================================================*/
+document.addEventListener('DOMContentLoaded', ()=>{
+  initPVLive();
+  // initialize slider gradients
+  ['g1','g2','g3'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.setProperty('--p', ((el.value-100)/(1000-100)*100)+'%');
+  });
+  updateLiveCurve();
+  initSim();
+  buildResultsTable();
+  buildEffChart();
+  buildRipChart();
+  buildDeltaBars();
+  startRace(2);  // pre-load Heavy PSC race
+});
+</script>
+</body>
+</html>

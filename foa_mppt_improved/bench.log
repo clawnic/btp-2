@@ -1,0 +1,32 @@
+﻿
+=== Case1_Uniform: Case 1 - Uniform 1000 W/m^2 ===
+  P&O       eta= 99.99%  t_track=0.680s  ripple=  0.07W  E=85.17%
+  PSO       eta=100.00%  t_track=0.040s  ripple=  0.00W  E=98.59%
+  FOA       eta= 99.45%  t_track=0.200s  ripple=  6.45W  E=91.31%
+  AH-FOA    eta= 99.63%  t_track=0.120s  ripple=  0.00W  E=96.86%
+
+=== Case2_Light: Case 2 - Light PSC ===
+  P&O       eta= 74.40%  t_track=0.290s  ripple=  2.69W  E=67.86%
+  PSO       eta= 84.33%  t_track=0.040s  ripple= 21.72W  E=78.73%
+  FOA       eta= 99.71%  t_track=0.180s  ripple=  0.00W  E=83.69%
+  AH-FOA    eta= 99.71%  t_track=0.180s  ripple=  0.00W  E=88.17%
+
+=== Case3_Heavy: Case 3 - Heavy PSC ===
+  P&O       eta= 74.28%  t_track=0.290s  ripple=  2.66W  E=65.59%
+  PSO       eta= 69.38%  t_track=0.020s  ripple= 27.45W  E=73.17%
+  FOA       eta= 68.34%  t_track=0.030s  ripple= 28.53W  E=63.62%
+  AH-FOA    eta= 99.71%  t_track=0.180s  ripple=  0.00W  E=86.86%
+
+=== Case4_Severe: Case 4 - Severe PSC ===
+  P&O       eta= 74.21%  t_track=0.290s  ripple=  2.66W  E=64.31%
+  PSO       eta= 77.40%  t_track=0.040s  ripple= 41.81W  E=66.49%
+  FOA       eta= 62.87%  t_track=0.020s  ripple= 40.56W  E=53.51%
+  AH-FOA    eta= 99.71%  t_track=0.120s  ripple=  0.00W  E=82.77%
+
+=== Case5_Dynamic: Case 5 - Dynamic step change ===
+  P&O       eta= 86.67%  t_track=0.000s  ripple=  6.90W  E=76.10%
+  PSO       eta= 73.55%  t_track=0.000s  ripple= 22.83W  E=87.15%
+  FOA       eta= 63.22%  t_track=0.000s  ripple= 24.70W  E=76.78%
+  AH-FOA    eta= 72.03%  t_track=0.000s  ripple= 16.01W  E=85.55%
+
+Saved results to C:\Users\DSharma26\.local\share\graphite\btp\foa_mppt_improved\results
